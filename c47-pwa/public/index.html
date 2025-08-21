@@ -31,20 +31,22 @@
         .app-container {
             width: 100vw;
             height: 100vh;
-            position: relative;
+            position: fixed;
+            top: 0;
+            left: 0;
             display: flex;
-            align-items: center;
+            align-items: stretch;
             justify-content: center;
             background: #1a1a1a;
+            padding: 10px;
+            box-sizing: border-box;
         }
         
         .calculator-wrapper {
             position: relative;
             width: 100%;
             height: 100%;
-            max-width: 480px;
-            max-height: 800px;
-            aspect-ratio: 0.6;
+            max-width: 800px;
             margin: 0 auto;
             background: #2c2c2c;
             border-radius: 10px;
@@ -54,9 +56,8 @@
         
         @media (orientation: landscape) {
             .calculator-wrapper {
-                max-width: 800px;
-                max-height: 480px;
-                aspect-ratio: 1.67;
+                width: 100%;
+                height: 100%;
             }
         }
         
@@ -64,11 +65,10 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
             border: none;
             background: white;
-            transform-origin: top left;
+            transform-origin: center center;
+            transform: scale(1);
         }
         
         .loading-overlay {
@@ -294,11 +294,6 @@
         
         const gtkFrame = document.getElementById('gtk-frame');
         
-        gtkFrame.addEventListener('load', function() {
-            hideLoading();
-            connectionAttempts = 0;
-        });
-        
         gtkFrame.addEventListener('error', function() {
             connectionAttempts++;
             console.error(`GTK Broadway connection attempt ${connectionAttempts} failed`);
@@ -369,11 +364,69 @@
             e.preventDefault();
         });
         
+        function scaleCalculator() {
+            const frame = document.getElementById('gtk-frame');
+            const wrapper = document.querySelector('.calculator-wrapper');
+            
+            if (!frame || !wrapper) return;
+            
+            // Get container dimensions
+            const containerWidth = wrapper.offsetWidth;
+            const containerHeight = wrapper.offsetHeight;
+            
+            console.log(`Container: ${containerWidth}x${containerHeight}`);
+            
+            // Broadway typically renders at a fixed size regardless of iframe dimensions
+            // We need to scale the iframe content to fit within our container
+            // Assume Broadway content is roughly 640x480 for portrait C47
+            const broadwayWidth = 640;
+            const broadwayHeight = 480;
+            
+            // Calculate scale to fit the container while maintaining aspect ratio
+            const scaleX = containerWidth / broadwayWidth;
+            const scaleY = containerHeight / broadwayHeight;
+            const scale = Math.min(scaleX, scaleY, 1.5); // Cap at 1.5x to avoid excessive scaling
+            
+            // Set iframe to Broadway's native size
+            frame.style.width = broadwayWidth + 'px';
+            frame.style.height = broadwayHeight + 'px';
+            
+            // Apply transform to scale and center
+            frame.style.transform = `scale(${scale})`;
+            frame.style.transformOrigin = 'center center';
+            
+            // Center the scaled iframe
+            const scaledWidth = broadwayWidth * scale;
+            const scaledHeight = broadwayHeight * scale;
+            const offsetX = (containerWidth - scaledWidth) / 2;
+            const offsetY = (containerHeight - scaledHeight) / 2;
+            
+            frame.style.left = offsetX + 'px';
+            frame.style.top = offsetY + 'px';
+            
+            console.log(`Scaling Broadway ${broadwayWidth}x${broadwayHeight} by ${scale.toFixed(2)} to fit ${containerWidth}x${containerHeight}`);
+        }
+        
         window.addEventListener('orientationchange', function() {
             setTimeout(() => {
-                const frame = document.getElementById('gtk-frame');
-                frame.style.height = window.innerHeight + 'px';
+                scaleCalculator();
             }, 100);
+        });
+        
+        window.addEventListener('resize', function() {
+            scaleCalculator();
+        });
+        
+        // Initialize scaling
+        window.addEventListener('load', function() {
+            setTimeout(scaleCalculator, 1000);
+        });
+        
+        // Update the existing frame load handler
+        gtkFrame.addEventListener('load', function() {
+            hideLoading();
+            setTimeout(scaleCalculator, 500);
+            connectionAttempts = 0;
         });
         
         let lastTouchEnd = 0;
