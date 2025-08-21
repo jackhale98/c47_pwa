@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>C47 Scientific Calculator - WebAssembly</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="assets/C47.png">
+    <meta name="theme-color" content="#2B2A29">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="C47 Calc">
+    
+    <style>
+        /* Authentic C47 CSS - extracted and adapted from c47_pre.css */
+        @font-face {
+            font-family: 'C47__StandardFont';
+            src: url('assets/fonts/C47__StandardFont.ttf') format('truetype');
+        }
+        
+        @font-face {
+            font-family: 'C47__NumericFont';
+            src: url('assets/fonts/C47__NumericFont.ttf') format('truetype');
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #2B2A29; /* $bezelBackground */
+            overflow: hidden;
+            font-family: 'C47__StandardFont', 'Courier New', monospace, sans-serif;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        .calculator-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #2B2A29;
+            padding: 10px;
+        }
+
+        .calculator-body {
+            background: #2B2A29;
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 480px;
+            width: 100%;
+            height: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .screen-area {
+            background: #222222; /* $screenColor */
+            border: 2px solid #25292F; /* $keyBorder */
+            border-radius: 5px;
+            margin-bottom: 20px;
+            padding: 15px;
+            height: 200px;
+            position: relative;
+        }
+
+        .display {
+            color: #ffffff;
+            font-family: 'C47__NumericFont', 'Courier New', monospace;
+            font-size: 16px;
+            line-height: 1.4;
+            white-space: pre-line;
+            text-align: right;
+        }
+
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 8px;
+            width: 100%;
+        }
+
+        .key {
+            background: #212121; /* $keyBackground */
+            color: #ffffff; /* $keyLabelColor */
+            border: 2px solid #25292F; /* $keyBorder */
+            border-radius: 3px; /* $radius */
+            font-family: 'C47__StandardFont', sans-serif;
+            font-size: 14px;
+            font-weight: normal;
+            padding: 12px 8px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 50px;
+            position: relative;
+            transition: background-color 0.1s;
+        }
+
+        .key:hover {
+            background: #744a2e; /* $keyHover */
+        }
+
+        .key:active {
+            background: #5a3822;
+            transform: translateY(1px);
+        }
+
+        .key-main {
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .key-f {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            font-size: 9px;
+            color: #E5AE5A; /* $fGold */
+        }
+
+        .key-g {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 9px;
+            color: #7EB6BA; /* $gBlue */
+        }
+
+        .key-bottom {
+            font-size: 10px;
+            color: #a5a5a5; /* $letterGrey */
+        }
+
+        /* Special key styles */
+        .key-wide {
+            grid-column: span 2;
+        }
+
+        .key-enter {
+            grid-row: span 2;
+            grid-column: span 1;
+        }
+
+        .key-f-shift {
+            background: #E5AE5A; /* $fGold */
+            color: black;
+        }
+
+        .key-g-shift {
+            background: #7EB6BA; /* $gBlue */
+            color: black;
+        }
+
+        .key-on {
+            background: #e36c50; /* $AlphaGold */
+            color: black;
+        }
+
+        .status-line {
+            position: absolute;
+            bottom: 5px;
+            left: 15px;
+            font-size: 10px;
+            color: #a5a5a5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #ffffff;
+            font-size: 14px;
+        }
+        
+        .error {
+            color: #ff6b6b;
+            background: #2a1a1a;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        @media (max-width: 500px) {
+            .calculator-body {
+                padding: 10px;
+                margin: 5px;
+            }
+            
+            .key {
+                min-height: 45px;
+                font-size: 12px;
+                padding: 10px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <div class="calculator-body">
+            <div class="screen-area">
+                <div id="display" class="display">
+                    T: 0<br>
+                    Z: 0<br>
+                    Y: 0<br>
+                    X: 0
+                </div>
+                <div class="status-line" id="status"></div>
+            </div>
+            
+            <div id="loading" class="loading">
+                Loading C47 Calculator Engine...
+            </div>
+            
+            <div id="keyboard" class="keyboard" style="display: none;">
+                <!-- Row 1: Function keys -->
+                <button class="key" data-key="f"><span class="key-main">f</span></button>
+                <button class="key" data-key="g"><span class="key-main">g</span></button>
+                <button class="key" data-key="up"><span class="key-main">↑</span></button>
+                <button class="key" data-key="down"><span class="key-main">↓</span></button>
+                <button class="key" data-key="exit"><span class="key-main">EXIT</span></button>
+                <button class="key key-on" data-key="on"><span class="key-main">ON</span></button>
+
+                <!-- Row 2: Σ+, 1/x, √x, LOG, LN, XEQ -->
+                <button class="key" data-key="21">
+                    <span class="key-f">RI</span>
+                    <span class="key-g">FRT</span>
+                    <span class="key-main">Σ+</span>
+                    <span class="key-bottom">A</span>
+                </button>
+                <button class="key" data-key="22">
+                    <span class="key-f">y^x</span>
+                    <span class="key-g">#</span>
+                    <span class="key-main">1/x</span>
+                    <span class="key-bottom">B</span>
+                </button>
+                <button class="key" data-key="23">
+                    <span class="key-f">x²</span>
+                    <span class="key-g">ms</span>
+                    <span class="key-main">√x</span>
+                    <span class="key-bottom">C</span>
+                </button>
+                <button class="key" data-key="24">
+                    <span class="key-f">10^x</span>
+                    <span class="key-g">°</span>
+                    <span class="key-main">LOG</span>
+                    <span class="key-bottom">D</span>
+                </button>
+                <button class="key" data-key="25">
+                    <span class="key-f">e^x</span>
+                    <span class="key-g">→°F</span>
+                    <span class="key-main">LN</span>
+                    <span class="key-bottom">E</span>
+                </button>
+                <button class="key" data-key="26">
+                    <span class="key-f">AEQ</span>
+                    <span class="key-g">GTO</span>
+                    <span class="key-main">XEQ</span>
+                    <span class="key-bottom">F</span>
+                </button>
+
+                <!-- Row 3: STO, RCL, R↓, SIN, COS, TAN -->
+                <button class="key" data-key="31">
+                    <span class="key-f">STO+</span>
+                    <span class="key-g">COMPLEX</span>
+                    <span class="key-main">STO</span>
+                    <span class="key-bottom">G</span>
+                </button>
+                <button class="key" data-key="32">
+                    <span class="key-f">RCL+</span>
+                    <span class="key-g">%MRR</span>
+                    <span class="key-main">RCL</span>
+                    <span class="key-bottom">H</span>
+                </button>
+                <button class="key" data-key="33">
+                    <span class="key-f">R↑</span>
+                    <span class="key-g">π</span>
+                    <span class="key-main">R↓</span>
+                    <span class="key-bottom">I</span>
+                </button>
+                <button class="key" data-key="34">
+                    <span class="key-f">ASIN</span>
+                    <span class="key-g">∡</span>
+                    <span class="key-main">SIN</span>
+                    <span class="key-bottom">J</span>
+                </button>
+                <button class="key" data-key="35">
+                    <span class="key-f">ACOS</span>
+                    <span class="key-g">→HMS</span>
+                    <span class="key-main">COS</span>
+                    <span class="key-bottom">K</span>
+                </button>
+                <button class="key" data-key="36">
+                    <span class="key-f">ATAN</span>
+                    <span class="key-g">→HR</span>
+                    <span class="key-main">TAN</span>
+                    <span class="key-bottom">L</span>
+                </button>
+
+                <!-- Row 4: ENTER, x⇄y, +/-, EEX, ← -->
+                <button class="key key-enter" data-key="41">
+                    <span class="key-f">COPY</span>
+                    <span class="key-g">MATRIX</span>
+                    <span class="key-main">ENTER</span>
+                </button>
+                <button class="key" data-key="42">
+                    <span class="key-f">x≠y?</span>
+                    <span class="key-g">RAN</span>
+                    <span class="key-main">x⇄y</span>
+                    <span class="key-bottom">M</span>
+                </button>
+                <button class="key" data-key="43">
+                    <span class="key-f">x<0?</span>
+                    <span class="key-g">±</span>
+                    <span class="key-main">+/-</span>
+                    <span class="key-bottom">N</span>
+                </button>
+                <button class="key" data-key="44">
+                    <span class="key-f">x>y?</span>
+                    <span class="key-g">MANTISSA</span>
+                    <span class="key-main">EEX</span>
+                    <span class="key-bottom">O</span>
+                </button>
+                <button class="key" data-key="45">
+                    <span class="key-f">x≤y?</span>
+                    <span class="key-g">CLX</span>
+                    <span class="key-main">←</span>
+                    <span class="key-bottom">P</span>
+                </button>
+
+                <!-- Rows 5-8: Numeric keypad -->
+                <!-- Row 5: 7, 8, 9, ÷ -->
+                <button class="key" data-key="51">
+                    <span class="key-f">BASE</span>
+                    <span class="key-g">SOLVE</span>
+                    <span class="key-main">7</span>
+                    <span class="key-bottom">Q</span>
+                </button>
+                <button class="key" data-key="52">
+                    <span class="key-f">DISP</span>
+                    <span class="key-g">∫</span>
+                    <span class="key-main">8</span>
+                    <span class="key-bottom">R</span>
+                </button>
+                <button class="key" data-key="53">
+                    <span class="key-f">CF</span>
+                    <span class="key-g">d/dx</span>
+                    <span class="key-main">9</span>
+                    <span class="key-bottom">S</span>
+                </button>
+                <button class="key" data-key="54">
+                    <span class="key-f">SF</span>
+                    <span class="key-g">x!</span>
+                    <span class="key-main">÷</span>
+                    <span class="key-bottom">T</span>
+                </button>
+
+                <!-- Row 6: 4, 5, 6, × -->
+                <button class="key" data-key="61">
+                    <span class="key-f">FIX</span>
+                    <span class="key-g">PROB</span>
+                    <span class="key-main">4</span>
+                    <span class="key-bottom">U</span>
+                </button>
+                <button class="key" data-key="62">
+                    <span class="key-f">SCI</span>
+                    <span class="key-g">Σ</span>
+                    <span class="key-main">5</span>
+                    <span class="key-bottom">V</span>
+                </button>
+                <button class="key" data-key="63">
+                    <span class="key-f">ENG</span>
+                    <span class="key-g">Σ-</span>
+                    <span class="key-main">6</span>
+                    <span class="key-bottom">W</span>
+                </button>
+                <button class="key" data-key="64">
+                    <span class="key-f">ALL</span>
+                    <span class="key-g">x̄</span>
+                    <span class="key-main">×</span>
+                    <span class="key-bottom">X</span>
+                </button>
+
+                <!-- Row 7: 1, 2, 3, - -->
+                <button class="key" data-key="71">
+                    <span class="key-f">→DEC</span>
+                    <span class="key-g">→OCT</span>
+                    <span class="key-main">1</span>
+                    <span class="key-bottom">Y</span>
+                </button>
+                <button class="key" data-key="72">
+                    <span class="key-f">→HEX</span>
+                    <span class="key-g">→BIN</span>
+                    <span class="key-main">2</span>
+                    <span class="key-bottom">Z</span>
+                </button>
+                <button class="key" data-key="73">
+                    <span class="key-f">CLΣ</span>
+                    <span class="key-g">CAT</span>
+                    <span class="key-main">3</span>
+                </button>
+                <button class="key" data-key="74">
+                    <span class="key-f">PRG</span>
+                    <span class="key-g">HOME</span>
+                    <span class="key-main">-</span>
+                </button>
+
+                <!-- Row 8: 0, ., -, + -->
+                <button class="key key-wide" data-key="81">
+                    <span class="key-f">CONST</span>
+                    <span class="key-g">↓</span>
+                    <span class="key-main">0</span>
+                </button>
+                <button class="key" data-key="82">
+                    <span class="key-f">SHOW</span>
+                    <span class="key-g">VIEW</span>
+                    <span class="key-main">.</span>
+                </button>
+                <button class="key" data-key="83">
+                    <span class="key-f">R/S</span>
+                    <span class="key-g">P/R</span>
+                    <span class="key-main">R/S</span>
+                </button>
+                <button class="key" data-key="84">
+                    <span class="key-f">SST</span>
+                    <span class="key-g">BST</span>
+                    <span class="key-main">+</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WebAssembly Module -->
+    <script src="c47-core.js"></script>
+    
+    <script>
+        let c47Module = null;
+        let shiftF = false;
+        let shiftG = false;
+
+        // Initialize WebAssembly module
+        Module = {
+            onRuntimeInitialized: function() {
+                c47Module = Module;
+                
+                // Initialize calculator
+                Module.ccall('c47_init', 'number', [], []);
+                
+                // Hide loading, show keyboard
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('keyboard').style.display = 'grid';
+                
+                // Update display
+                updateDisplay();
+                
+                console.log('C47 WebAssembly Calculator initialized');
+            },
+            onAbort: function(what) {
+                console.error('WebAssembly module aborted:', what);
+                document.getElementById('loading').innerHTML = 
+                    'Error loading calculator engine: ' + what;
+            }
+        };
+
+        function updateDisplay() {
+            if (!c47Module) return;
+            
+            const x = c47Module.ccall('c47_get_x', 'number', [], []);
+            const y = c47Module.ccall('c47_get_y', 'number', [], []);
+            const z = c47Module.ccall('c47_get_z', 'number', [], []);
+            const t = c47Module.ccall('c47_get_t', 'number', [], []);
+            
+            document.getElementById('display').innerHTML = 
+                `T: ${formatNumber(t)}<br>` +
+                `Z: ${formatNumber(z)}<br>` +
+                `Y: ${formatNumber(y)}<br>` +
+                `X: ${formatNumber(x)}`;
+                
+            // Update status line
+            const status = [];
+            if (shiftF) status.push('f');
+            if (shiftG) status.push('g');
+            document.getElementById('status').innerHTML = status.join(' ');
+        }
+
+        function formatNumber(num) {
+            if (num === 0) return '0';
+            if (Math.abs(num) < 1e-10 || Math.abs(num) > 1e10) {
+                return num.toExponential(6);
+            }
+            return num.toString();
+        }
+
+        // Key press handling
+        document.getElementById('keyboard').addEventListener('click', function(e) {
+            if (!c47Module) return;
+            
+            const key = e.target.closest('.key');
+            if (!key) return;
+            
+            const keyCode = key.dataset.key;
+            handleKeyPress(keyCode);
+        });
+
+        function handleKeyPress(keyCode) {
+            console.log('Key pressed:', keyCode);
+            
+            // Handle shift keys
+            if (keyCode === 'f') {
+                shiftF = !shiftF;
+                if (shiftF) shiftG = false;
+                updateDisplay();
+                return;
+            }
+            
+            if (keyCode === 'g') {
+                shiftG = !shiftG;
+                if (shiftG) shiftF = false;
+                updateDisplay();
+                return;
+            }
+            
+            // Handle numeric keys and functions
+            if (keyCode >= '0' && keyCode <= '9') {
+                const digit = parseInt(keyCode);
+                // For now, just set X register
+                c47Module.ccall('c47_set_x', 'void', ['number'], [digit]);
+            } else {
+                // Call the C47 key press handler
+                const key = parseInt(keyCode);
+                if (!isNaN(key)) {
+                    c47Module.ccall('c47_key_press', 'void', ['number'], [key]);
+                }
+            }
+            
+            // Clear shift states after operation
+            shiftF = false;
+            shiftG = false;
+            updateDisplay();
+        }
+
+        // Keyboard input support
+        document.addEventListener('keydown', function(e) {
+            if (!c47Module) return;
+            
+            const keyMap = {
+                '0': '81', '1': '71', '2': '72', '3': '73',
+                '4': '61', '5': '62', '6': '63',
+                '7': '51', '8': '52', '9': '53',
+                '.': '82',
+                '+': '84', '-': '74', '*': '64', '/': '54',
+                'Enter': '41', ' ': '41', // Enter and Space for ENTER
+                'Escape': '45', // ESC for ←
+                'f': 'f', 'g': 'g'
+            };
+            
+            const keyCode = keyMap[e.key];
+            if (keyCode) {
+                e.preventDefault();
+                handleKeyPress(keyCode);
+            }
+        });
+    </script>
+</body>
+</html>
