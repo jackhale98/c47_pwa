@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C47 Calculator Feedback</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: transparent;
+        }
+        
+        #feedback-widget {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+        }
+        
+        #feedback-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #feedback-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+        
+        #feedback-btn.active {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            transform: rotate(45deg);
+        }
+        
+        #feedback-form {
+            display: none;
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 320px;
+            max-height: 500px;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        #feedback-form.show {
+            display: block;
+        }
+        
+        #feedback-form h3 {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #34495e;
+            font-size: 14px;
+        }
+        
+        select, textarea, input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+        
+        select:focus, textarea:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .rating-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .rating-star {
+            font-size: 24px;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        
+        .rating-star:hover,
+        .rating-star.selected {
+            color: #ffc107;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        
+        .feature-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .feature-checkbox input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+        
+        .feature-checkbox label {
+            margin: 0;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        #submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        #submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        #cancel-btn {
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        #cancel-btn:hover {
+            background: #e0e0e0;
+        }
+        
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .success-message.show {
+            display: block;
+        }
+        
+        .success-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        
+        .success-text {
+            color: #27ae60;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .device-info {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #999;
+        }
+        
+        @media (max-width: 480px) {
+            #feedback-form {
+                width: calc(100vw - 40px);
+                right: 50%;
+                transform: translateX(50%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="feedback-widget">
+        <button id="feedback-btn" aria-label="Provide feedback">
+            💬
+        </button>
+        
+        <div id="feedback-form">
+            <h3>C47 Calculator Feedback</h3>
+            
+            <form id="feedback-content">
+                <div class="form-group">
+                    <label for="experience-rating">How is the GTK interface experience?</label>
+                    <select id="experience-rating" name="experience" required>
+                        <option value="">Select rating...</option>
+                        <option value="excellent">Excellent - Works perfectly</option>
+                        <option value="good">Good - Minor issues only</option>
+                        <option value="okay">Okay - Some problems</option>
+                        <option value="poor">Poor - Major issues</option>
+                        <option value="broken">Broken - Unusable</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Overall Rating</label>
+                    <div class="rating-group" id="star-rating">
+                        <span class="rating-star" data-rating="1">⭐</span>
+                        <span class="rating-star" data-rating="2">⭐</span>
+                        <span class="rating-star" data-rating="3">⭐</span>
+                        <span class="rating-star" data-rating="4">⭐</span>
+                        <span class="rating-star" data-rating="5">⭐</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="feedback-type">Feedback Type</label>
+                    <select id="feedback-type" name="type" required>
+                        <option value="">Select type...</option>
+                        <option value="bug">Bug Report</option>
+                        <option value="feature">Feature Request</option>
+                        <option value="performance">Performance Issue</option>
+                        <option value="ui">UI/UX Feedback</option>
+                        <option value="compatibility">Compatibility Issue</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Which features are working well?</label>
+                    <div class="feature-grid">
+                        <div class="feature-checkbox">
+                            <input type="checkbox" id="feature-display" name="features" value="display">
+                            <label for="feature-display">Display</label>
+                        </div>
+                        <div class="feature-checkbox">
+                            <input type="checkbox" id="feature-buttons" name="features" value="buttons">
+                            <label for="feature-buttons">Buttons</label>
+                        </div>
+                        <div class="feature-checkbox">
+                            <input type="checkbox" id="feature-menus" name="features" value="menus">
+                            <label for="feature-menus">Menus</label>
+                        </div>
+                        <div class="feature-checkbox">
+                            <input type="checkbox" id="feature-speed" name="features" value="speed">
+                            <label for="feature-speed">Speed</label>
+                        </div>
+                        <div class="feature-checkbox">
+                            <input type="checkbox" id="feature-offline" name="features" value="offline">
+                            <label for="feature-offline">Offline</label>
+                        </div>
+                        <div class="feature-checkbox">
+                            <input type="checkbox" id="feature-install" name="features" value="install">
+                            <label for="feature-install">Install</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="feedback-message">Your Feedback</label>
+                    <textarea id="feedback-message" name="message" 
+                              placeholder="Please share your experience with the C47 Calculator PWA..." 
+                              required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email (optional)</label>
+                    <input type="email" id="email" name="email" 
+                           placeholder="your@email.com">
+                </div>
+                
+                <div class="device-info" id="device-info">
+                    <!-- Device info will be populated by JavaScript -->
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" id="cancel-btn">Cancel</button>
+                    <button type="submit" id="submit-btn">Send Feedback</button>
+                </div>
+            </form>
+            
+            <div class="success-message" id="success-message">
+                <div class="success-icon">✅</div>
+                <div class="success-text">Thank you for your feedback!</div>
+                <div>We appreciate your input on improving C47 Calculator.</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        (function() {
+            'use strict';
+            
+            const feedbackBtn = document.getElementById('feedback-btn');
+            const feedbackForm = document.getElementById('feedback-form');
+            const cancelBtn = document.getElementById('cancel-btn');
+            const submitBtn = document.getElementById('submit-btn');
+            const formContent = document.getElementById('feedback-content');
+            const successMessage = document.getElementById('success-message');
+            const deviceInfo = document.getElementById('device-info');
+            const starRating = document.getElementById('star-rating');
+            
+            let selectedRating = 0;
+            let isOpen = false;
+            
+            // Populate device info
+            function getDeviceInfo() {
+                const info = {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    screen: `${screen.width}x${screen.height}`,
+                    viewport: `${window.innerWidth}x${window.innerHeight}`,
+                    online: navigator.onLine,
+                    language: navigator.language,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                };
+                
+                deviceInfo.innerHTML = `
+                    <strong>Device Info:</strong><br>
+                    Platform: ${info.platform}<br>
+                    Screen: ${info.screen}<br>
+                    Connection: ${info.online ? 'Online' : 'Offline'}
+                `;
+                
+                return info;
+            }
+            
+            // Toggle feedback form
+            function toggleFeedback() {
+                isOpen = !isOpen;
+                
+                if (isOpen) {
+                    feedbackForm.classList.add('show');
+                    feedbackBtn.classList.add('active');
+                    feedbackBtn.innerHTML = '✕';
+                    getDeviceInfo();
+                } else {
+                    feedbackForm.classList.remove('show');
+                    feedbackBtn.classList.remove('active');
+                    feedbackBtn.innerHTML = '💬';
+                }
+            }
+            
+            // Star rating functionality
+            starRating.addEventListener('click', function(e) {
+                if (e.target.classList.contains('rating-star')) {
+                    selectedRating = parseInt(e.target.dataset.rating);
+                    updateStarDisplay();
+                }
+            });
+            
+            starRating.addEventListener('mouseover', function(e) {
+                if (e.target.classList.contains('rating-star')) {
+                    const hoverRating = parseInt(e.target.dataset.rating);
+                    highlightStars(hoverRating);
+                }
+            });
+            
+            starRating.addEventListener('mouseout', function() {
+                updateStarDisplay();
+            });
+            
+            function updateStarDisplay() {
+                highlightStars(selectedRating);
+            }
+            
+            function highlightStars(rating) {
+                const stars = starRating.querySelectorAll('.rating-star');
+                stars.forEach((star, index) => {
+                    if (index < rating) {
+                        star.classList.add('selected');
+                    } else {
+                        star.classList.remove('selected');
+                    }
+                });
+            }
+            
+            // Handle form submission
+            function submitFeedback(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(formContent);
+                const features = Array.from(document.querySelectorAll('input[name="features"]:checked'))
+                    .map(cb => cb.value);
+                
+                const feedbackData = {
+                    experience: formData.get('experience'),
+                    rating: selectedRating,
+                    type: formData.get('type'),
+                    features: features,
+                    message: formData.get('message'),
+                    email: formData.get('email'),
+                    device: getDeviceInfo(),
+                    timestamp: new Date().toISOString(),
+                    sessionId: sessionStorage.getItem('c47_session_id') || 'unknown'
+                };
+                
+                console.log('Feedback submitted:', feedbackData);
+                
+                // Send to analytics
+                if (window.C47Analytics) {
+                    window.C47Analytics.logMetric('feedback_submitted', 1, {
+                        type: feedbackData.type,
+                        rating: feedbackData.rating,
+                        experience: feedbackData.experience
+                    });
+                }
+                
+                // Send to backend (implement your endpoint)
+                fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(feedbackData)
+                }).catch(err => {
+                    console.warn('Feedback API not available:', err);
+                    // Store locally as fallback
+                    try {
+                        const storedFeedback = JSON.parse(localStorage.getItem('c47_feedback') || '[]');
+                        storedFeedback.push(feedbackData);
+                        localStorage.setItem('c47_feedback', JSON.stringify(storedFeedback));
+                    } catch (e) {
+                        console.error('Failed to store feedback locally:', e);
+                    }
+                });
+                
+                // Show success message
+                formContent.style.display = 'none';
+                successMessage.classList.add('show');
+                
+                // Reset and close after 3 seconds
+                setTimeout(() => {
+                    formContent.reset();
+                    selectedRating = 0;
+                    updateStarDisplay();
+                    formContent.style.display = 'block';
+                    successMessage.classList.remove('show');
+                    toggleFeedback();
+                }, 3000);
+            }
+            
+            // Event listeners
+            feedbackBtn.addEventListener('click', toggleFeedback);
+            cancelBtn.addEventListener('click', toggleFeedback);
+            formContent.addEventListener('submit', submitFeedback);
+            
+            // Close on outside click
+            document.addEventListener('click', function(e) {
+                if (isOpen && !feedbackWidget.contains(e.target)) {
+                    toggleFeedback();
+                }
+            });
+            
+            // Initialize
+            getDeviceInfo();
+            
+            // Export for external use
+            window.C47Feedback = {
+                open: () => { if (!isOpen) toggleFeedback(); },
+                close: () => { if (isOpen) toggleFeedback(); },
+                submit: (data) => {
+                    // Programmatic submission
+                    console.log('Programmatic feedback:', data);
+                }
+            };
+            
+        })();
+    </script>
+</body>
+</html>

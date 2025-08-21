@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Button Base Style -->
+    <style name="BaseButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">60dp</item>
+        <item name="android:layout_columnWeight">1</item>
+        <item name="android:layout_margin">2dp</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:elevation">2dp</item>
+    </style>
+
+    <!-- Number Buttons (0-9) -->
+    <style name="NumberButton" parent="BaseButton">
+        <item name="android:background">@drawable/button_number</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <!-- Operation Buttons (+, -, ×, ÷) -->
+    <style name="OperationButton" parent="BaseButton">
+        <item name="android:background">@drawable/button_operation</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <!-- Scientific Function Buttons (sin, cos, ln, etc.) -->
+    <style name="ScientificButton" parent="BaseButton">
+        <item name="android:background">@drawable/button_scientific</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">10sp</item>
+    </style>
+
+    <!-- Function Buttons (SHIFT, ALPHA, MODE) -->
+    <style name="FunctionButton" parent="BaseButton">
+        <item name="android:background">@drawable/button_function</item>
+        <item name="android:textColor">#000000</item>
+        <item name="android:textSize">10sp</item>
+    </style>
+
+    <!-- Enter Button -->
+    <style name="EnterButton" parent="BaseButton">
+        <item name="android:background">@drawable/button_enter</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:layout_columnWeight">2</item>
+    </style>
+
+    <!-- Clear Button -->
+    <style name="ClearButton" parent="BaseButton">
+        <item name="android:background">@drawable/button_clear</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- Stack Operation Buttons -->
+    <style name="StackButton" parent="BaseButton">
+        <item name="android:background">@drawable/button_stack</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- Special Buttons (EEX, +/-, etc.) -->
+    <style name="SpecialButton" parent="BaseButton">
+        <item name="android:background">@drawable/button_special</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">10sp</item>
+    </style>
+
+    <!-- Constant Buttons (π, e) -->
+    <style name="ConstantButton" parent="BaseButton">
+        <item name="android:background">@drawable/button_constant</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+</resources>

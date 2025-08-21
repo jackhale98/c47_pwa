@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C47 Calculator - GTK Broadway Mockup</title>
+    <style>
+        @font-face {
+            font-family: 'C47Numeric';
+            src: url('/assets/gtk/fonts/C47__NumericFont.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'C47Standard';
+            src: url('/assets/gtk/fonts/C47__StandardFont.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'C47Tiny';
+            src: url('/assets/gtk/fonts/C47__TinyFont.ttf') format('truetype');
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #e8e8e8;
+            font-family: 'C47Standard', sans-serif;
+        }
+        
+        .calculator-window {
+            width: 400px;
+            background: #f8f8f8;
+            border: 1px solid #b0b0b0;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .display {
+            background: #000;
+            color: #00ff00;
+            font-family: 'C47Numeric', monospace;
+            font-size: 24px;
+            padding: 15px;
+            text-align: right;
+            border: 2px inset #ccc;
+            margin-bottom: 20px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        
+        .stack-display {
+            background: #1a1a1a;
+            color: #00aa00;
+            font-family: 'C47Tiny', monospace;
+            font-size: 10px;
+            padding: 8px;
+            border: 1px inset #999;
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 3px;
+        }
+        
+        .calc-button {
+            height: 50px;
+            border: 1px solid #999;
+            border-radius: 3px;
+            background: linear-gradient(to bottom, #f0f0f0, #d0d0d0);
+            color: #333;
+            font-weight: bold;
+            font-family: 'C47Standard', sans-serif;
+            font-size: 12px;
+            cursor: pointer;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        
+        .calc-button:active {
+            background: linear-gradient(to bottom, #c0c0c0, #e0e0e0);
+            border-color: #666;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+        }
+        
+        .calc-button.function { background: linear-gradient(to bottom, #4a90e2, #357abd); color: white; }
+        .calc-button.number { background: linear-gradient(to bottom, #f8f8f8, #e0e0e0); }
+        .calc-button.operation { background: linear-gradient(to bottom, #ff6b35, #e55527); color: white; }
+        .calc-button.enter { background: linear-gradient(to bottom, #8e44ad, #7d3c98); color: white; grid-column: span 2; }
+        .calc-button.clear { background: linear-gradient(to bottom, #e74c3c, #c0392b); color: white; }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-family: 'C47Tiny', sans-serif;
+            font-size: 10px;
+        }
+        
+        .indicator {
+            padding: 2px 6px;
+            border-radius: 2px;
+        }
+        
+        .indicator.active { background: #ffff00; color: #000; }
+    </style>
+</head>
+<body>
+    <div class="calculator-window">
+        <!-- Stack Display -->
+        <div class="stack-display">
+            <div>T: <span id="t-reg">0</span></div>
+            <div>Z: <span id="z-reg">0</span></div>
+            <div>Y: <span id="y-reg">0</span></div>
+            <div>X: <span id="x-reg">0</span></div>
+        </div>
+        
+        <!-- Main Display -->
+        <div class="display">
+            <span id="main-display">0</span>
+        </div>
+        
+        <!-- Button Grid -->
+        <div class="button-grid">
+            <!-- Row 1: Functions -->
+            <button class="calc-button function" data-key="shift">SHIFT</button>
+            <button class="calc-button function" data-key="alpha">α</button>
+            <button class="calc-button function" data-key="mode">MODE</button>
+            <button class="calc-button function" data-key="sto">STO</button>
+            <button class="calc-button function" data-key="rcl">RCL</button>
+            
+            <!-- Row 2: Scientific -->
+            <button class="calc-button function" data-key="sin">SIN</button>
+            <button class="calc-button function" data-key="cos">COS</button>
+            <button class="calc-button function" data-key="tan">TAN</button>
+            <button class="calc-button function" data-key="ln">LN</button>
+            <button class="calc-button function" data-key="log">LOG</button>
+            
+            <!-- Row 3: More functions -->
+            <button class="calc-button function" data-key="sqrt">√x</button>
+            <button class="calc-button function" data-key="square">x²</button>
+            <button class="calc-button function" data-key="reciprocal">1/x</button>
+            <button class="calc-button function" data-key="exp">e^x</button>
+            <button class="calc-button function" data-key="power">y^x</button>
+            
+            <!-- Row 4: Stack ops -->
+            <button class="calc-button enter" data-key="enter">ENTER</button>
+            <button class="calc-button function" data-key="swap">x↔y</button>
+            <button class="calc-button function" data-key="roll">R↓</button>
+            <button class="calc-button clear" data-key="clear">CLR</button>
+            
+            <!-- Row 5: 7-9 -->
+            <button class="calc-button number" data-key="7">7</button>
+            <button class="calc-button number" data-key="8">8</button>
+            <button class="calc-button number" data-key="9">9</button>
+            <button class="calc-button operation" data-key="divide">÷</button>
+            <button class="calc-button function" data-key="pi">π</button>
+            
+            <!-- Row 6: 4-6 -->
+            <button class="calc-button number" data-key="4">4</button>
+            <button class="calc-button number" data-key="5">5</button>
+            <button class="calc-button number" data-key="6">6</button>
+            <button class="calc-button operation" data-key="multiply">×</button>
+            <button class="calc-button function" data-key="e">e</button>
+            
+            <!-- Row 7: 1-3 -->
+            <button class="calc-button number" data-key="1">1</button>
+            <button class="calc-button number" data-key="2">2</button>
+            <button class="calc-button number" data-key="3">3</button>
+            <button class="calc-button operation" data-key="minus">−</button>
+            <button class="calc-button function" data-key="chs">+/-</button>
+            
+            <!-- Row 8: 0, . -->
+            <button class="calc-button number" data-key="0">0</button>
+            <button class="calc-button number" data-key="dot">.</button>
+            <button class="calc-button function" data-key="eex">EEX</button>
+            <button class="calc-button operation" data-key="plus">+</button>
+            <button class="calc-button function" data-key="back">←</button>
+        </div>
+        
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div>
+                <span class="indicator" id="deg-indicator">DEG</span>
+                <span class="indicator" id="shift-indicator">SHIFT</span>
+                <span class="indicator" id="alpha-indicator">ALPHA</span>
+            </div>
+            <div>C47 Calculator - Broadway GTK</div>
+        </div>
+    </div>
+    
+    <script>
+        // Simple RPN calculator simulation
+        class C47Calculator {
+            constructor() {
+                this.stack = [0, 0, 0, 0]; // X, Y, Z, T
+                this.display = "0";
+                this.entering = false;
+                this.angleMode = 'DEG';
+                this.shiftState = false;
+                this.alphaState = false;
+            }
+            
+            pressKey(key) {
+                switch(key) {
+                    case '0': case '1': case '2': case '3': case '4':
+                    case '5': case '6': case '7': case '8': case '9':
+                        this.enterDigit(key);
+                        break;
+                    case 'dot':
+                        this.enterDot();
+                        break;
+                    case 'enter':
+                        this.enter();
+                        break;
+                    case 'plus':
+                        this.operation((y, x) => y + x);
+                        break;
+                    case 'minus':
+                        this.operation((y, x) => y - x);
+                        break;
+                    case 'multiply':
+                        this.operation((y, x) => y * x);
+                        break;
+                    case 'divide':
+                        this.operation((y, x) => x !== 0 ? y / x : NaN);
+                        break;
+                    case 'sqrt':
+                        this.unaryOperation(Math.sqrt);
+                        break;
+                    case 'square':
+                        this.unaryOperation(x => x * x);
+                        break;
+                    case 'reciprocal':
+                        this.unaryOperation(x => x !== 0 ? 1/x : NaN);
+                        break;
+                    case 'sin':
+                        this.unaryOperation(x => Math.sin(this.toRadians(x)));
+                        break;
+                    case 'cos':
+                        this.unaryOperation(x => Math.cos(this.toRadians(x)));
+                        break;
+                    case 'tan':
+                        this.unaryOperation(x => Math.tan(this.toRadians(x)));
+                        break;
+                    case 'ln':
+                        this.unaryOperation(Math.log);
+                        break;
+                    case 'log':
+                        this.unaryOperation(Math.log10);
+                        break;
+                    case 'exp':
+                        this.unaryOperation(Math.exp);
+                        break;
+                    case 'pi':
+                        this.pushStack();
+                        this.stack[0] = Math.PI;
+                        this.updateDisplay();
+                        break;
+                    case 'e':
+                        this.pushStack();
+                        this.stack[0] = Math.E;
+                        this.updateDisplay();
+                        break;
+                    case 'chs':
+                        this.stack[0] = -this.stack[0];
+                        this.updateDisplay();
+                        break;
+                    case 'swap':
+                        [this.stack[0], this.stack[1]] = [this.stack[1], this.stack[0]];
+                        this.updateDisplay();
+                        break;
+                    case 'roll':
+                        const temp = this.stack[0];
+                        this.stack[0] = this.stack[1];
+                        this.stack[1] = this.stack[2];
+                        this.stack[2] = this.stack[3];
+                        this.stack[3] = temp;
+                        this.updateDisplay();
+                        break;
+                    case 'clear':
+                        this.stack[0] = 0;
+                        this.display = "0";
+                        this.entering = false;
+                        this.updateDisplay();
+                        break;
+                }
+            }
+            
+            enterDigit(digit) {
+                if (!this.entering) {
+                    this.display = digit;
+                    this.entering = true;
+                } else {
+                    this.display += digit;
+                }
+                this.stack[0] = parseFloat(this.display);
+                this.updateDisplay();
+            }
+            
+            enterDot() {
+                if (!this.entering) {
+                    this.display = "0.";
+                    this.entering = true;
+                } else if (!this.display.includes('.')) {
+                    this.display += '.';
+                }
+                this.updateDisplay();
+            }
+            
+            enter() {
+                this.pushStack();
+                this.entering = false;
+                this.updateDisplay();
+            }
+            
+            pushStack() {
+                this.stack[3] = this.stack[2];
+                this.stack[2] = this.stack[1];
+                this.stack[1] = this.stack[0];
+            }
+            
+            operation(op) {
+                const result = op(this.stack[1], this.stack[0]);
+                this.stack[0] = result;
+                this.stack[1] = this.stack[2];
+                this.stack[2] = this.stack[3];
+                this.stack[3] = 0;
+                this.entering = false;
+                this.updateDisplay();
+            }
+            
+            unaryOperation(op) {
+                this.stack[0] = op(this.stack[0]);
+                this.entering = false;
+                this.updateDisplay();
+            }
+            
+            toRadians(deg) {
+                return this.angleMode === 'DEG' ? deg * Math.PI / 180 : deg;
+            }
+            
+            updateDisplay() {
+                document.getElementById('main-display').textContent = this.formatNumber(this.stack[0]);
+                document.getElementById('x-reg').textContent = this.formatNumber(this.stack[0]);
+                document.getElementById('y-reg').textContent = this.formatNumber(this.stack[1]);
+                document.getElementById('z-reg').textContent = this.formatNumber(this.stack[2]);
+                document.getElementById('t-reg').textContent = this.formatNumber(this.stack[3]);
+            }
+            
+            formatNumber(num) {
+                if (isNaN(num)) return 'Error';
+                if (num === Math.floor(num) && Math.abs(num) < 1e10) {
+                    return num.toString();
+                }
+                return num.toPrecision(10).replace(/\.?0+$/, '');
+            }
+        }
+        
+        // Initialize calculator
+        const calc = new C47Calculator();
+        
+        // Add button listeners
+        document.querySelectorAll('.calc-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const key = button.dataset.key;
+                calc.pressKey(key);
+                
+                // Visual feedback
+                button.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    button.style.transform = '';
+                }, 100);
+            });
+        });
+        
+        // Initial display update
+        calc.updateDisplay();
+        
+        console.log('C47 GTK Broadway Calculator loaded');
+    </script>
+</body>
+</html>
