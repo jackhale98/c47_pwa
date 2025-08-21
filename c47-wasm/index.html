@@ -216,7 +216,8 @@
             </div>
             
             <div id="loading" class="loading">
-                Loading C47 Calculator Engine...
+                Loading C47 Calculator Engine...<br>
+                <small id="loading-status">Initializing WebAssembly...</small>
             </div>
             
             <div id="keyboard" class="keyboard" style="display: none;">
@@ -445,49 +446,120 @@
         let shiftF = false;
         let shiftG = false;
 
+        // Add debugging
+        function updateLoadingStatus(message) {
+            const statusEl = document.getElementById('loading-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+            }
+            console.log('C47 Loading:', message);
+        }
+
         // Initialize WebAssembly module
+        updateLoadingStatus('Setting up module...');
+        
         Module = {
             onRuntimeInitialized: function() {
-                c47Module = Module;
+                console.log('WebAssembly runtime initialized');
+                updateLoadingStatus('Runtime ready, initializing calculator...');
                 
-                // Initialize calculator
-                Module.ccall('c47_init', 'number', [], []);
-                
-                // Hide loading, show keyboard
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('keyboard').style.display = 'grid';
-                
-                // Update display
-                updateDisplay();
-                
-                console.log('C47 WebAssembly Calculator initialized');
+                try {
+                    c47Module = Module;
+                    
+                    // Test if functions are available
+                    console.log('Available functions:', Object.keys(Module).filter(k => k.startsWith('_c47')));
+                    
+                    // Initialize calculator using direct function call
+                    if (Module._c47_init) {
+                        const result = Module._c47_init();
+                        console.log('c47_init result:', result);
+                        updateLoadingStatus('Calculator initialized!');
+                    } else {
+                        console.error('c47_init function not found');
+                        updateLoadingStatus('Function not found - using demo mode');
+                        startDemoMode();
+                        return;
+                    }
+                    
+                    // Hide loading, show keyboard
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('keyboard').style.display = 'grid';
+                    
+                    // Update display
+                    updateDisplay();
+                    
+                    console.log('C47 WebAssembly Calculator ready');
+                } catch (e) {
+                    console.error('Error during initialization:', e);
+                    document.getElementById('loading').innerHTML = 
+                        '<div class="error">Initialization error: ' + e.message + '</div>';
+                }
             },
             onAbort: function(what) {
                 console.error('WebAssembly module aborted:', what);
+                updateLoadingStatus('Failed to load');
                 document.getElementById('loading').innerHTML = 
-                    'Error loading calculator engine: ' + what;
+                    '<div class="error">Error loading calculator engine: ' + what + '</div>';
+            },
+            print: function(text) {
+                console.log('WASM:', text);
+            },
+            printErr: function(text) {
+                console.error('WASM Error:', text);
             }
         };
+        
+        // Monitor loading progress
+        setTimeout(function() {
+            if (!c47Module) {
+                updateLoadingStatus('Loading timeout - starting in demo mode');
+                console.error('WebAssembly module failed to load within 10 seconds');
+                startDemoMode();
+            }
+        }, 10000);
+        
+        // Demo mode fallback if WebAssembly fails
+        function startDemoMode() {
+            console.log('Starting demo mode');
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('keyboard').style.display = 'grid';
+            
+            // Simulate calculator state
+            let demoStack = {x: 0, y: 0, z: 0, t: 0};
+            
+            // Update display with demo data
+            document.getElementById('display').innerHTML = 
+                `T: ${demoStack.t}<br>` +
+                `Z: ${demoStack.z}<br>` +
+                `Y: ${demoStack.y}<br>` +
+                `X: ${demoStack.x}`;
+                
+            document.getElementById('status').innerHTML = 'DEMO MODE - WebAssembly not available';
+        }
 
         function updateDisplay() {
             if (!c47Module) return;
             
-            const x = c47Module.ccall('c47_get_x', 'number', [], []);
-            const y = c47Module.ccall('c47_get_y', 'number', [], []);
-            const z = c47Module.ccall('c47_get_z', 'number', [], []);
-            const t = c47Module.ccall('c47_get_t', 'number', [], []);
-            
-            document.getElementById('display').innerHTML = 
-                `T: ${formatNumber(t)}<br>` +
-                `Z: ${formatNumber(z)}<br>` +
-                `Y: ${formatNumber(y)}<br>` +
-                `X: ${formatNumber(x)}`;
+            try {
+                const x = c47Module._c47_get_x ? c47Module._c47_get_x() : 0;
+                const y = c47Module._c47_get_y ? c47Module._c47_get_y() : 0;
+                const z = c47Module._c47_get_z ? c47Module._c47_get_z() : 0;
+                const t = c47Module._c47_get_t ? c47Module._c47_get_t() : 0;
                 
-            // Update status line
-            const status = [];
-            if (shiftF) status.push('f');
-            if (shiftG) status.push('g');
-            document.getElementById('status').innerHTML = status.join(' ');
+                document.getElementById('display').innerHTML = 
+                    `T: ${formatNumber(t)}<br>` +
+                    `Z: ${formatNumber(z)}<br>` +
+                    `Y: ${formatNumber(y)}<br>` +
+                    `X: ${formatNumber(x)}`;
+                    
+                // Update status line
+                const status = [];
+                if (shiftF) status.push('f');
+                if (shiftG) status.push('g');
+                document.getElementById('status').innerHTML = status.join(' ');
+            } catch (e) {
+                console.error('Error updating display:', e);
+            }
         }
 
         function formatNumber(num) {
@@ -531,12 +603,14 @@
             if (keyCode >= '0' && keyCode <= '9') {
                 const digit = parseInt(keyCode);
                 // For now, just set X register
-                c47Module.ccall('c47_set_x', 'void', ['number'], [digit]);
+                if (c47Module._c47_set_x) {
+                    c47Module._c47_set_x(digit);
+                }
             } else {
                 // Call the C47 key press handler
                 const key = parseInt(keyCode);
-                if (!isNaN(key)) {
-                    c47Module.ccall('c47_key_press', 'void', ['number'], [key]);
+                if (!isNaN(key) && c47Module._c47_key_press) {
+                    c47Module._c47_key_press(key);
                 }
             }
             

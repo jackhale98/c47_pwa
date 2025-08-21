@@ -1,0 +1,21 @@
+{
+  "name": "C47 Scientific Calculator - WebAssembly",
+  "short_name": "C47 WASM",
+  "description": "Authentic C47 RPN Scientific Calculator in WebAssembly",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#2B2A29",
+  "theme_color": "#2B2A29",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["utilities", "productivity", "education"],
+  "icons": [
+    {
+      "src": "assets/C47.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

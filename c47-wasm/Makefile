@@ -8,7 +8,7 @@ export PATH := $(EMSDK_ROOT):$(EMSDK_ROOT)/upstream/emscripten:$(PATH)
 CC = emcc
 CFLAGS = -O3 -Wall -Wno-unused-parameter -Wno-unused-variable
 CFLAGS += -s WASM=1 -s EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
-CFLAGS += -s EXPORTED_FUNCTIONS='["_malloc", "_free"]'
+CFLAGS += -s EXPORTED_FUNCTIONS='["_malloc", "_free", "_c47_init", "_c47_get_x", "_c47_get_y", "_c47_get_z", "_c47_get_t", "_c47_set_x", "_c47_enter_number", "_c47_drop_stack", "_c47_swap_xy", "_c47_add", "_c47_subtract", "_c47_multiply", "_c47_divide", "_c47_sin", "_c47_cos", "_c47_tan", "_c47_ln", "_c47_exp", "_c47_sqrt", "_c47_get_error", "_c47_clear_error", "_c47_key_press", "_c47_get_display_string"]'
 CFLAGS += -s ALLOW_MEMORY_GROWTH=1
 CFLAGS += -s STACK_SIZE=1MB
 CFLAGS += -s INITIAL_MEMORY=16MB
