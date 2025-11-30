@@ -131,6 +131,12 @@ final class CalculatorViewModel: ObservableObject {
         pressKey(.clx)
     }
 
+    /// Clear all memory registers
+    func clearAllRegisters() {
+        engine.clearAllRegisters()
+        updateState()
+    }
+
     // MARK: - Stack Operations
 
     /// Swap X and Y registers

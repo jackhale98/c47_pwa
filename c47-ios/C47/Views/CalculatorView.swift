@@ -14,6 +14,9 @@ struct CalculatorView: View {
     /// Whether to show scientific functions
     @State private var showScientific: Bool = true
 
+    /// Whether to show settings screen
+    @State private var showSettings: Bool = false
+
     var body: some View {
         GeometryReader { geometry in
             let isLandscape = geometry.size.width > geometry.size.height
@@ -24,9 +27,12 @@ struct CalculatorView: View {
                 portraitLayout(geometry: geometry)
             }
         }
-        .background(Color(white: 0.1))
+        .background(C47Theme.bezelBackground)
         .onChange(of: scenePhase) { _, newPhase in
             handleScenePhaseChange(newPhase)
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView(viewModel: viewModel)
         }
     }
 
@@ -96,10 +102,10 @@ struct CalculatorView: View {
                     Text(showScientific ? "SCI" : "STD")
                         .font(.system(size: 10, weight: .medium))
                 }
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(C47Theme.keyLabelColor.opacity(0.7))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color.gray.opacity(0.3))
+                .background(C47Theme.keyBackground)
                 .cornerRadius(4)
             }
 
@@ -111,25 +117,25 @@ struct CalculatorView: View {
             } label: {
                 Text(viewModel.angleMode.label)
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
-                    .foregroundColor(.green)
+                    .foregroundColor(C47Theme.displayGreen)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.black.opacity(0.3))
+                    .background(C47Theme.screenColor)
                     .cornerRadius(4)
             }
 
             Spacer()
 
-            // Clear button
+            // Settings button
             Button {
-                viewModel.clear()
+                showSettings = true
             } label: {
-                Image(systemName: "trash")
+                Image(systemName: "gear")
                     .font(.system(size: 12))
-                    .foregroundColor(.red.opacity(0.7))
+                    .foregroundColor(C47Theme.keyLabelColor.opacity(0.7))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.gray.opacity(0.3))
+                    .background(C47Theme.keyBackground)
                     .cornerRadius(4)
             }
         }
@@ -167,54 +173,40 @@ struct QuickButton: View {
     let label: String
     let action: () -> Void
 
+    @State private var isPressed = false
+
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.white.opacity(0.8))
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundColor(C47Theme.keyLabelColor.opacity(0.8))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 6)
-                .background(Color.gray.opacity(0.3))
-                .cornerRadius(4)
+                .background(isPressed ? C47Theme.keyHover : C47Theme.keyBackground)
+                .cornerRadius(3)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 3)
+                        .stroke(C47Theme.keyBorder, lineWidth: 1)
+                )
         }
-    }
-}
-
-// MARK: - Calculator View with Custom Theme
-
-struct ThemedCalculatorView: View {
-    @StateObject private var viewModel = CalculatorViewModel()
-
-    let displayColor: Color
-    let backgroundColor: Color
-
-    var body: some View {
-        VStack(spacing: 12) {
-            DisplayView(viewModel: viewModel, displayColor: displayColor)
-
-            KeypadView(viewModel: viewModel, layoutStyle: .scientific)
-        }
-        .padding(12)
-        .background(backgroundColor)
+        .buttonStyle(PlainButtonStyle())
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
     }
 }
 
 // MARK: - Preview
 
-#Preview("Calculator - Portrait") {
+#Preview("C47 Calculator - Portrait") {
     CalculatorView()
         .preferredColorScheme(.dark)
 }
 
-#Preview("Calculator - Landscape") {
+#Preview("C47 Calculator - Landscape") {
     CalculatorView()
         .preferredColorScheme(.dark)
         .previewInterfaceOrientation(.landscapeLeft)
-}
-
-#Preview("Themed Calculator") {
-    ThemedCalculatorView(
-        displayColor: .cyan,
-        backgroundColor: Color(red: 0.1, green: 0.1, blue: 0.2)
-    )
 }

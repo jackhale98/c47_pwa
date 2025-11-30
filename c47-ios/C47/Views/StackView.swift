@@ -55,19 +55,19 @@ struct StackView: View {
             // LastX display
             if isExpanded {
                 Divider()
-                    .background(Color.gray.opacity(0.3))
+                    .background(C47Theme.keyBorder)
                     .padding(.vertical, 4)
 
                 HStack {
                     Text("LastX:")
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(C47Theme.displayGreenDim)
 
                     Spacer()
 
                     Text(viewModel.lastXString)
                         .font(.system(size: 12, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(C47Theme.displayGreenDim)
                         .lineLimit(1)
                 }
                 .padding(.horizontal, 8)
@@ -77,11 +77,11 @@ struct StackView: View {
             }
         }
         .padding(8)
-        .background(Color.black)
-        .cornerRadius(8)
+        .background(C47Theme.screenColor)
+        .cornerRadius(4)
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(C47Theme.behindScreen, lineWidth: 2)
         )
     }
 
@@ -91,7 +91,7 @@ struct StackView: View {
         HStack {
             Text("STACK")
                 .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .foregroundColor(.gray)
+                .foregroundColor(C47Theme.displayGreenDim)
 
             Spacer()
 
@@ -103,7 +103,7 @@ struct StackView: View {
             } label: {
                 Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                     .font(.system(size: 10))
-                    .foregroundColor(.gray)
+                    .foregroundColor(C47Theme.displayGreenDim)
             }
         }
         .padding(.horizontal, 8)
@@ -126,7 +126,7 @@ struct StackRegisterRow: View {
             // Register label
             Text("\(label):")
                 .font(.system(size: isMainRegister ? 14 : 11, weight: .medium, design: .monospaced))
-                .foregroundColor(isMainRegister ? .green.opacity(0.8) : .green.opacity(0.5))
+                .foregroundColor(isMainRegister ? C47Theme.displayGreen.opacity(0.8) : C47Theme.displayGreen.opacity(0.5))
                 .frame(width: 20, alignment: .leading)
 
             Spacer()
@@ -134,14 +134,14 @@ struct StackRegisterRow: View {
             // Register value
             Text(value)
                 .font(.system(size: isMainRegister ? 24 : 14, weight: isMainRegister ? .bold : .regular, design: .monospaced))
-                .foregroundColor(isMainRegister ? .green : .green.opacity(0.7))
+                .foregroundColor(isMainRegister ? C47Theme.displayGreen : C47Theme.displayGreen.opacity(0.7))
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
                 .offset(y: offset)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, isMainRegister ? 4 : 2)
-        .background(isMainRegister ? Color.black.opacity(0.3) : Color.clear)
+        .background(isMainRegister ? C47Theme.screenColor.opacity(0.5) : Color.clear)
         .cornerRadius(4)
         .onChange(of: animation) { _, newValue in
             animateRegister(newValue)
@@ -192,21 +192,25 @@ struct HorizontalStackView: View {
                 Text("Z: \(viewModel.stackZ)")
             }
             .font(.system(size: 11, design: .monospaced))
-            .foregroundColor(.green.opacity(0.5))
+            .foregroundColor(C47Theme.displayGreen.opacity(0.5))
 
             VStack(alignment: .trailing, spacing: 2) {
                 Text("Y: \(viewModel.stackY)")
                     .font(.system(size: 12, design: .monospaced))
-                    .foregroundColor(.green.opacity(0.6))
+                    .foregroundColor(C47Theme.displayGreen.opacity(0.6))
 
                 Text("X: \(viewModel.display)")
                     .font(.system(size: 18, weight: .bold, design: .monospaced))
-                    .foregroundColor(.green)
+                    .foregroundColor(C47Theme.displayGreen)
             }
         }
         .padding(8)
-        .background(Color.black)
-        .cornerRadius(6)
+        .background(C47Theme.screenColor)
+        .cornerRadius(4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(C47Theme.behindScreen, lineWidth: 1)
+        )
     }
 }
 
@@ -222,5 +226,5 @@ struct HorizontalStackView: View {
         HorizontalStackView(viewModel: CalculatorViewModel())
     }
     .padding()
-    .background(Color.gray.opacity(0.3))
+    .background(C47Theme.bezelBackground)
 }

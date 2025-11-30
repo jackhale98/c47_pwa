@@ -276,6 +276,14 @@ final class C47Engine {
         }
     }
 
+    /// Clear all registers (stack and memory) - convenience alias
+    func clearAllRegisters() {
+        engineQueue.sync {
+            c47_ios_clear_memory()
+            c47_ios_reset()
+        }
+    }
+
     // MARK: - State Persistence
 
     /// Save calculator state to a file

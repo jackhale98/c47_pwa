@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // KeypadView.swift
-// C47 Calculator for iOS - Calculator Keypad View
+// C47 Calculator for iOS - Authentic C47 Keypad
 
 import SwiftUI
 
-/// The calculator keypad with all buttons
+/// The calculator keypad with authentic C47 button styling
 struct KeypadView: View {
     @ObservedObject var viewModel: CalculatorViewModel
 
@@ -12,7 +12,7 @@ struct KeypadView: View {
     var layoutStyle: KeypadLayout = .scientific
 
     /// Spacing between buttons
-    var buttonSpacing: CGFloat = 8
+    var buttonSpacing: CGFloat = 4
 
     var body: some View {
         let layout = layoutStyle.keys
@@ -21,7 +21,7 @@ struct KeypadView: View {
             ForEach(layout.indices, id: \.self) { rowIndex in
                 HStack(spacing: buttonSpacing) {
                     ForEach(layout[rowIndex], id: \.self) { key in
-                        CalculatorButton(
+                        C47Button(
                             key: key,
                             isShiftFActive: viewModel.isShiftFActive,
                             isShiftGActive: viewModel.isShiftGActive
@@ -32,6 +32,8 @@ struct KeypadView: View {
                 }
             }
         }
+        .padding(4)
+        .background(C47Theme.bezelBackground)
     }
 }
 
@@ -54,9 +56,9 @@ enum KeypadLayout {
     }
 }
 
-// MARK: - Calculator Button
+// MARK: - Authentic C47 Button
 
-struct CalculatorButton: View {
+struct C47Button: View {
     let key: KeyCode
     var isShiftFActive: Bool = false
     var isShiftGActive: Bool = false
@@ -68,199 +70,200 @@ struct CalculatorButton: View {
         Button(action: {
             action()
         }) {
-            VStack(spacing: 2) {
-                // Shifted function labels (smaller, above)
-                if let shiftLabel = currentShiftLabel {
-                    Text(shiftLabel)
+            VStack(spacing: 1) {
+                // F-shifted label (gold, above key)
+                if let fLabel = key.shiftFLabel {
+                    Text(fLabel)
                         .font(.system(size: 8, weight: .medium))
-                        .foregroundColor(shiftLabelColor)
+                        .foregroundColor(C47Theme.fGold)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                 }
 
                 // Primary label
                 Text(key.primaryLabel)
-                    .font(.system(size: buttonFontSize, weight: .semibold, design: .rounded))
+                    .font(.system(size: buttonFontSize, weight: .medium, design: .monospaced))
                     .foregroundColor(foregroundColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
+
+                // G-shifted label (blue, below key)
+                if let gLabel = key.shiftGLabel {
+                    Text(gLabel)
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundColor(C47Theme.gBlue)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(backgroundColor)
-            .cornerRadius(buttonCornerRadius)
+            .background(isPressed ? pressedBackground : backgroundColor)
+            .cornerRadius(3)
             .overlay(
-                RoundedRectangle(cornerRadius: buttonCornerRadius)
-                    .stroke(borderColor, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 3)
+                    .stroke(borderColor, lineWidth: 2)
             )
-            .scaleEffect(isPressed ? 0.95 : 1.0)
         }
         .buttonStyle(PlainButtonStyle())
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    withAnimation(.easeInOut(duration: 0.1)) {
-                        isPressed = true
-                    }
-                }
-                .onEnded { _ in
-                    withAnimation(.easeInOut(duration: 0.1)) {
-                        isPressed = false
-                    }
-                }
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
         )
         .aspectRatio(buttonAspectRatio, contentMode: .fit)
     }
 
     // MARK: - Computed Properties
 
-    private var currentShiftLabel: String? {
-        if isShiftFActive {
-            return key.shiftFLabel
-        } else if isShiftGActive {
-            return key.shiftGLabel
-        }
-        return nil
-    }
-
-    private var shiftLabelColor: Color {
-        if isShiftFActive {
-            return .yellow
-        } else if isShiftGActive {
-            return .cyan
-        }
-        return .clear
-    }
-
     private var backgroundColor: Color {
         switch key {
-        case .enter:
-            return Color(red: 0.0, green: 0.4, blue: 0.0)
-        case .plus, .minus, .multiply, .divide:
-            return Color(red: 0.6, green: 0.4, blue: 0.0)
         case .shiftF:
-            return isShiftFActive ? .yellow : Color(red: 0.6, green: 0.5, blue: 0.0)
+            return isShiftFActive ? C47Theme.fHoverGold : C47Theme.fGold
         case .shiftG:
-            return isShiftGActive ? .cyan : Color(red: 0.0, green: 0.4, blue: 0.5)
-        case .clear, .clx:
-            return Color(red: 0.5, green: 0.2, blue: 0.2)
-        case .digit0, .digit1, .digit2, .digit3, .digit4,
-             .digit5, .digit6, .digit7, .digit8, .digit9, .dot:
-            return Color(red: 0.25, green: 0.25, blue: 0.25)
+            return isShiftGActive ? C47Theme.gHoverBlue : C47Theme.gBlue
+        case .alpha:
+            return C47Theme.alphaGold
         default:
-            return Color(red: 0.35, green: 0.35, blue: 0.35)
+            return C47Theme.keyBackground
+        }
+    }
+
+    private var pressedBackground: Color {
+        switch key {
+        case .shiftF:
+            return C47Theme.fHoverGold
+        case .shiftG:
+            return C47Theme.gHoverBlue
+        case .alpha:
+            return C47Theme.alphaHoverGold
+        default:
+            return C47Theme.keyHover
         }
     }
 
     private var foregroundColor: Color {
         switch key {
-        case .shiftF where isShiftFActive:
-            return .black
-        case .shiftG where isShiftGActive:
+        case .shiftF, .shiftG, .alpha:
             return .black
         default:
-            return .white
+            return C47Theme.keyLabelColor
         }
     }
 
     private var borderColor: Color {
-        backgroundColor.opacity(0.5)
+        switch key {
+        case .shiftF:
+            return C47Theme.fGold.opacity(0.5)
+        case .shiftG:
+            return C47Theme.gBlue.opacity(0.5)
+        default:
+            return C47Theme.keyBorder
+        }
     }
 
     private var buttonFontSize: CGFloat {
         switch key {
-        case .enter:
-            return 14
         case .digit0, .digit1, .digit2, .digit3, .digit4,
              .digit5, .digit6, .digit7, .digit8, .digit9:
-            return 20
-        case .plus, .minus, .multiply, .divide:
             return 22
-        default:
+        case .plus, .minus, .multiply, .divide:
+            return 18
+        case .enter:
             return 12
+        case .shiftF, .shiftG:
+            return 18
+        default:
+            return 11
         }
     }
 
-    private var buttonCornerRadius: CGFloat {
-        8
-    }
-
     private var buttonAspectRatio: CGFloat {
-        key == .enter ? 2.0 : 1.0
+        1.0
     }
 }
 
-// MARK: - Simple Keypad (Basic Calculator)
+// MARK: - Simple Keypad (Basic Calculator Style)
 
 struct SimpleKeypadView: View {
     @ObservedObject var viewModel: CalculatorViewModel
 
-    let buttonSpacing: CGFloat = 10
+    let buttonSpacing: CGFloat = 6
 
     var body: some View {
         VStack(spacing: buttonSpacing) {
             // Row 1: Clear operations
             HStack(spacing: buttonSpacing) {
-                SimpleButton(label: "AC", color: .red.opacity(0.7)) {
+                SimpleC47Button(label: "AC", style: .clear) {
                     viewModel.clear()
                 }
-                SimpleButton(label: "+/−", color: .gray) {
+                SimpleC47Button(label: "+/−", style: .function) {
                     viewModel.changeSign()
                 }
-                SimpleButton(label: "%", color: .gray) {
+                SimpleC47Button(label: "%", style: .function) {
                     viewModel.percent()
                 }
-                SimpleButton(label: "÷", color: .orange) {
+                SimpleC47Button(label: "÷", style: .operation) {
                     viewModel.divide()
                 }
             }
 
             // Row 2
             HStack(spacing: buttonSpacing) {
-                SimpleButton(label: "7") { viewModel.enterDigit(7) }
-                SimpleButton(label: "8") { viewModel.enterDigit(8) }
-                SimpleButton(label: "9") { viewModel.enterDigit(9) }
-                SimpleButton(label: "×", color: .orange) {
+                SimpleC47Button(label: "7", style: .numeric) { viewModel.enterDigit(7) }
+                SimpleC47Button(label: "8", style: .numeric) { viewModel.enterDigit(8) }
+                SimpleC47Button(label: "9", style: .numeric) { viewModel.enterDigit(9) }
+                SimpleC47Button(label: "×", style: .operation) {
                     viewModel.multiply()
                 }
             }
 
             // Row 3
             HStack(spacing: buttonSpacing) {
-                SimpleButton(label: "4") { viewModel.enterDigit(4) }
-                SimpleButton(label: "5") { viewModel.enterDigit(5) }
-                SimpleButton(label: "6") { viewModel.enterDigit(6) }
-                SimpleButton(label: "−", color: .orange) {
+                SimpleC47Button(label: "4", style: .numeric) { viewModel.enterDigit(4) }
+                SimpleC47Button(label: "5", style: .numeric) { viewModel.enterDigit(5) }
+                SimpleC47Button(label: "6", style: .numeric) { viewModel.enterDigit(6) }
+                SimpleC47Button(label: "−", style: .operation) {
                     viewModel.subtract()
                 }
             }
 
             // Row 4
             HStack(spacing: buttonSpacing) {
-                SimpleButton(label: "1") { viewModel.enterDigit(1) }
-                SimpleButton(label: "2") { viewModel.enterDigit(2) }
-                SimpleButton(label: "3") { viewModel.enterDigit(3) }
-                SimpleButton(label: "+", color: .orange) {
+                SimpleC47Button(label: "1", style: .numeric) { viewModel.enterDigit(1) }
+                SimpleC47Button(label: "2", style: .numeric) { viewModel.enterDigit(2) }
+                SimpleC47Button(label: "3", style: .numeric) { viewModel.enterDigit(3) }
+                SimpleC47Button(label: "+", style: .operation) {
                     viewModel.add()
                 }
             }
 
             // Row 5
             HStack(spacing: buttonSpacing) {
-                SimpleButton(label: "0", span: 2) { viewModel.enterDigit(0) }
-                SimpleButton(label: ".") { viewModel.enterDecimal() }
-                SimpleButton(label: "⏎", color: .green) {
+                SimpleC47Button(label: "0", style: .numeric, span: 2) { viewModel.enterDigit(0) }
+                SimpleC47Button(label: ".", style: .numeric) { viewModel.enterDecimal() }
+                SimpleC47Button(label: "ENTER", style: .enter) {
                     viewModel.enter()
                 }
             }
         }
+        .padding(4)
+        .background(C47Theme.bezelBackground)
     }
 }
 
-// MARK: - Simple Button
+// MARK: - Simple C47 Button
 
-struct SimpleButton: View {
+enum SimpleButtonStyle {
+    case numeric
+    case operation
+    case function
+    case enter
+    case clear
+}
+
+struct SimpleC47Button: View {
     let label: String
-    var color: Color = Color(white: 0.3)
+    var style: SimpleButtonStyle = .numeric
     var span: Int = 1
     let action: () -> Void
 
@@ -269,41 +272,70 @@ struct SimpleButton: View {
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 24, weight: .medium, design: .rounded))
-                .foregroundColor(.white)
+                .font(.system(size: fontSize, weight: .medium, design: .monospaced))
+                .foregroundColor(foregroundColor)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(color)
-                .cornerRadius(10)
-                .scaleEffect(isPressed ? 0.95 : 1.0)
+                .background(isPressed ? pressedColor : backgroundColor)
+                .cornerRadius(3)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 3)
+                        .stroke(C47Theme.keyBorder, lineWidth: 2)
+                )
         }
         .buttonStyle(PlainButtonStyle())
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    withAnimation(.easeInOut(duration: 0.1)) {
-                        isPressed = true
-                    }
-                }
-                .onEnded { _ in
-                    withAnimation(.easeInOut(duration: 0.1)) {
-                        isPressed = false
-                    }
-                }
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
         )
-        .aspectRatio(span == 2 ? 2.2 : 1.0, contentMode: .fit)
+        .aspectRatio(span == 2 ? 2.1 : 1.0, contentMode: .fit)
+    }
+
+    private var backgroundColor: Color {
+        switch style {
+        case .numeric:
+            return C47Theme.numericKeyBackground
+        case .operation:
+            return C47Theme.operationKey
+        case .function:
+            return C47Theme.keyBackground
+        case .enter:
+            return C47Theme.enterKey
+        case .clear:
+            return C47Theme.clearKey
+        }
+    }
+
+    private var pressedColor: Color {
+        C47Theme.keyHover
+    }
+
+    private var foregroundColor: Color {
+        C47Theme.keyLabelColor
+    }
+
+    private var fontSize: CGFloat {
+        switch style {
+        case .numeric:
+            return 24
+        case .operation:
+            return 20
+        case .enter:
+            return 12
+        default:
+            return 14
+        }
     }
 }
 
 // MARK: - Preview
 
-#Preview("Scientific Keypad") {
+#Preview("C47 Scientific Keypad") {
     KeypadView(viewModel: CalculatorViewModel(), layoutStyle: .scientific)
-        .padding()
-        .background(Color.black)
+        .background(C47Theme.bezelBackground)
 }
 
-#Preview("Simple Keypad") {
+#Preview("C47 Simple Keypad") {
     SimpleKeypadView(viewModel: CalculatorViewModel())
-        .padding()
-        .background(Color.black)
+        .background(C47Theme.bezelBackground)
 }
